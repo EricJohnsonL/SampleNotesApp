@@ -2,6 +2,8 @@ package com.ericjohnson.mynotesapp.adapter;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
@@ -11,11 +13,11 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.ericjohnson.mynotesapp.CustomOnClickListener;
-import com.ericjohnson.mynotesapp.Entity.Note;
+import com.ericjohnson.mynotesapp.entity.Note;
 import com.ericjohnson.mynotesapp.FormAddUpdateActivity;
 import com.ericjohnson.mynotesapp.R;
 
-import java.util.LinkedList;
+import static android.provider.UserDictionary.Words.CONTENT_URI;
 
 /**
  * Created by EricJohnson on 3/26/2018.
@@ -23,18 +25,18 @@ import java.util.LinkedList;
 
 public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder> {
 
-    private LinkedList<Note> listNotes;
+    private Cursor listNotes;
     private Activity activity;
 
     public NoteAdapter(Activity activity) {
         this.activity = activity;
     }
 
-    public LinkedList<Note> getListNotes() {
+    public Cursor getListNotes() {
         return listNotes;
     }
 
-    public void setListNotes(LinkedList<Note> listNotes) {
+    public void setListNotes(Cursor listNotes) {
         this.listNotes = listNotes;
     }
 
@@ -48,23 +50,33 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) {
-        holder.tvTitle.setText(getListNotes().get(position).getTitle());
-        holder.tvDate.setText(getListNotes().get(position).getDate());
-        holder.tvDescription.setText(getListNotes().get(position).getDescription());
+        final Note note = getItem(position);
+        holder.tvTitle.setText(note.getTitle());
+        holder.tvDate.setText(note.getDate());
+        holder.tvDescription.setText(note.getDescription());
         holder.cvNote.setOnClickListener(new CustomOnClickListener(position, new CustomOnClickListener.OnItemClickCallback() {
             @Override
             public void onItemClicked(View view, int position) {
                 Intent intent= new Intent(activity, FormAddUpdateActivity.class);
-                intent.putExtra(FormAddUpdateActivity.EXTRA_NOTE, getListNotes().get(position));
+                Uri uri = Uri.parse(CONTENT_URI+"/"+note.getId());
+                intent.setData(uri);
                 activity.startActivityForResult(intent, FormAddUpdateActivity.REQUEST_UPDATE);
             }
         }));
 
     }
 
+    private Note getItem(int position){
+        if (!listNotes.moveToPosition(position)) {
+            throw new IllegalStateException("Position invalid");
+        }
+        return new Note(listNotes);
+    }
+
     @Override
     public int getItemCount() {
-        return getListNotes().size();
+        if (listNotes == null) return 0;
+        return listNotes.getCount();
     }
 
     public class NoteViewHolder extends RecyclerView.ViewHolder {
